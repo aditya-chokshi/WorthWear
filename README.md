@@ -1,74 +1,150 @@
 # Worthwear
 
-Worthwear is an AI shopping companion for buying fewer, better products. It analyzes a product photo and scores durability, repairability, versatility, lifespan, and cost per use.
+> An AI shopping companion for buying fewer, better products.
 
-## Current features
+Worthwear analyzes a product photo and helps you decide whether it is worth buying. It estimates durability, repairability, versatility, lifespan, and cost per use, then gives a transparent **buy** or **skip** recommendation.
 
-- Upload JPG, JPEG, or PNG product photos
-- Analyze products with Gemini vision
-- Show a buy/skip recommendation with reasoning and an AI confidence caveat
-- Save analyses and uploaded image paths to SQLite
-- Review the Wardrobe Log with summary metrics and a cost-per-use chart
+## What It Does
 
-## Setup
+- Accepts JPG, JPEG, and PNG product photos
+- Uses Gemini vision to analyze the visible product
+- Scores durability, repairability, and versatility from 1 to 10
+- Estimates material and useful lifespan
+- Calculates estimated cost per use when a price is supplied
+- Explains the recommendation in plain language
+- Clearly labels results as AI estimates, not verified facts
+- Saves completed analyses to SQLite
+- Provides a Wardrobe Log with history, summary metrics, and a cost-per-use chart
 
-Python 3.11 or newer is required.
+## Demo Gallery
+
+Public sample products are stored in [`Images/`](Images/). These files are useful for manual testing and demonstrations.
+
+Additional public or consented test photos can be placed in [`test_images/`](test_images/). Do not put private, identifying, or copyrighted images in the repository without permission.
+
+## Tech Stack
+
+| Layer | Technology |
+| --- | --- |
+| Interface | Streamlit |
+| Vision analysis | Google Gemini API |
+| Persistence | SQLite via Python `sqlite3` |
+| Image handling | Pillow |
+| Configuration | `python-dotenv` |
+| Tests | Python `unittest` |
+
+## Project Structure
+
+```text
+worthwear/
+├── app.py                 # Streamlit interface and user workflow
+├── analyzer.py            # Gemini prompt, API call, parsing, and errors
+├── config.py              # Environment variables and model selection
+├── db.py                  # SQLite schema, storage, history, and statistics
+├── models.py              # ProductAnalysis dataclass and validation
+├── tests/
+│   └── test_core.py       # Model and database tests
+├── Images/                # Committed demo images
+├── test_images/           # Optional committed test images
+├── .env.example           # Safe configuration template
+├── requirements.txt       # Python dependencies
+└── worthwear.db           # Runtime database, created locally and ignored
+```
+
+## Requirements
+
+- Python 3.11 or newer
+- A Gemini API key from [Google AI Studio](https://aistudio.google.com/)
+- Git, if you want to contribute or push changes to GitHub
+
+## Local Setup
+
+From the project directory:
 
 ```powershell
 py -3.11 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
 Copy-Item .env.example .env
-# Edit .env and add your Gemini API key before starting the app.
+```
+
+Open `.env` and add your real key:
+
+```env
+GEMINI_API_KEY=your_actual_key_here
+```
+
+Never commit `.env` or share its contents. The application currently uses the Gemini model configured in `config.py`.
+
+## Run the App
+
+```powershell
 python -m streamlit run app.py
 ```
 
-The app opens at `http://localhost:8501`. Keep the terminal running while using it. Stop the server with `Ctrl+C`.
+Open [http://localhost:8501](http://localhost:8501) in your browser. Keep the terminal running while using the app. Stop the server with `Ctrl+C`.
+
+### Analyze a product
+
+1. Open the **Analyze** tab.
+2. Upload a clear product photo.
+3. Optionally enter the product name and price.
+4. Click **Analyze**.
+5. Review the score card, recommendation, reasoning, and confidence note.
+
+### Review your history
+
+Open **Wardrobe Log** to see saved analyses, total items, average cost per use, buy-versus-skip counts, and the cost-per-use trend.
 
 ## Testing
 
-Run the automated checks from the project root:
+Run the automated tests from the project root:
 
 ```powershell
 python -m unittest discover -s tests -v
 python -m py_compile app.py analyzer.py config.py db.py models.py
 ```
 
-The automated tests use temporary SQLite files and mocked model responses, so they do not spend API quota. For a manual end-to-end check:
+The automated tests use temporary SQLite databases and do not call Gemini, so they do not consume API quota. For a manual test, use one of the files in `Images/`, try both a priced and unpriced analysis, open the Wardrobe Log, and test an invalid price such as `abc`.
 
-1. Start the app and upload a clear product photo.
-2. Try one analysis with a price and one without a price.
-3. Confirm the score card, recommendation, reasoning, and AI-estimate disclaimer appear.
-4. Open `Wardrobe Log` and confirm the item, summary metrics, and chart appear.
-5. Try an invalid price and confirm the app shows an error without crashing.
+## Data and Privacy
 
-## Secrets and generated files
+- `.env` contains your secret Gemini API key and is ignored by Git.
+- `worthwear.db` contains local analysis history and is ignored by Git.
+- `uploads/` contains runtime-uploaded images and is ignored by Git.
+- `Images/` and `test_images/` are intended for public, non-sensitive demo assets only.
+- Gemini results are estimates based on visual evidence and should not be treated as verified product claims.
+- Do not upload private photos, personal information, or images you do not have permission to redistribute.
 
-- Put the real key only in `.env`; never commit it.
-- `.env`, `worthwear.db`, and `uploads/` are ignored by Git.
-- Commit `.env.example` with placeholder values for other developers.
+## GitHub Workflow
 
-## GitHub workflow
+The repository is available at [github.com/aditya-chokshi/WorthWear](https://github.com/aditya-chokshi/WorthWear).
 
-After installing Git for Windows or GitHub Desktop, create an empty repository on GitHub named `worthwear`. From this folder, run:
-
-```powershell
-git init
-git add .
-git commit -m "Build Worthwear AI shopping companion"
-git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/worthwear.git
-git push -u origin main
-```
-
-For future work:
+After changing code:
 
 ```powershell
 git pull
+python -m unittest discover -s tests -v
 git status
 git add .
 git commit -m "Describe the change"
 git push
 ```
 
-Use short feature branches for larger changes, run the tests before committing, and rotate the Gemini key immediately if it is ever exposed.
+Before committing, confirm that `.env`, `worthwear.db`, and `uploads/` are not listed by `git status`.
+
+For larger changes, use a feature branch:
+
+```powershell
+git switch -c feature/short-description
+# make and test your changes
+git add .
+git commit -m "Describe the feature"
+git push -u origin feature/short-description
+```
+
+If an API key is ever exposed, revoke it immediately in Google AI Studio, create a replacement, update `.env`, and restart the app.
+
+## License
+
+No license has been selected yet. Add a license before accepting external contributions or redistributing the project.
